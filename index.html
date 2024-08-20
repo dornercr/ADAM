@@ -3,30 +3,93 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ADAM</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <title>ADAM - Automated Detection of Authentic Material</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
-        .card { margin-bottom: 20px; }
+        :root {
+            --primary-color: #0056b3;
+            --secondary-color: #6c757d;
+            --background-color: #f8f9fa;
+            --card-bg: #ffffff;
+            --text-color: #333333;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+        }
+        .navbar {
+            background-color: var(--primary-color);
+            box-shadow: 0 2px 4px rgba(0,0,0,.1);
+        }
+        .navbar-brand {
+            font-weight: bold;
+            font-size: 1.5rem;
+        }
+        .card {
+            border: none;
+            box-shadow: 0 4px 6px rgba(0,0,0,.1);
+            transition: transform 0.3s ease-in-out;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+        }
         .ilr-badge {
             position: absolute;
             top: 10px;
             right: 10px;
+            font-size: 0.8rem;
+        }
+        .btn-primary {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+        .btn-primary:hover {
+            background-color: #004494;
+            border-color: #004494;
+        }
+        .form-control:focus, .form-select:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 0.2rem rgba(0,86,179,.25);
+        }
+        #results {
+            min-height: 400px;
+        }
+        .loading {
+            display: none;
+            justify-content: center;
+            align-items: center;
+            height: 100px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .loading-spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid var(--primary-color);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
         }
     </style>
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+    <nav class="navbar navbar-expand-lg navbar-dark">
         <div class="container">
-            <a class="navbar-brand" href="#">ADAM - Automated Detection of Authentic Material</a>
+            <a class="navbar-brand" href="#"><i class="fas fa-search-plus me-2"></i>ADAM</a>
+            <span class="navbar-text text-light">Automated Detection of Authentic Material</span>
         </div>
     </nav>
 
     <div class="container mt-4">
         <div class="row">
-            <div class="col-md-3">
+            <div class="col-lg-3 mb-4">
                 <div class="card">
                     <div class="card-body">
-                        <h5 class="card-title">Search Filters</h5>
+                        <h5 class="card-title"><i class="fas fa-filter me-2"></i>Search Filters</h5>
                         <div class="mb-3">
                             <label for="languageSelect" class="form-label">Language</label>
                             <select class="form-select" id="languageSelect" onchange="loadLanguageData()">
@@ -49,31 +112,56 @@
                                 <option value="">All Levels</option>
                             </select>
                         </div>
-                        <button onclick="searchArticles()" class="btn btn-primary">Search</button>
+                        <button onclick="searchArticles()" class="btn btn-primary w-100">
+                            <i class="fas fa-search me-2"></i>Search
+                        </button>
                     </div>
                 </div>
             </div>
-            <div class="col-md-9">
-                <div id="results" class="row"></div>
+            <div class="col-lg-9">
+                <div class="loading" id="loadingSpinner">
+                    <div class="loading-spinner"></div>
+                </div>
+                <div id="results" class="row g-4"></div>
                 <div id="pagination" class="mt-4 text-center">
-                    <button id="prevPage" class="btn btn-primary" onclick="changePage(-1)">Previous</button>
-                    <span id="pageInfo"></span>
-                    <button id="nextPage" class="btn btn-primary" onclick="changePage(1)">Next</button>
+                    <button id="prevPage" class="btn btn-outline-primary" onclick="changePage(-1)">
+                        <i class="fas fa-chevron-left me-2"></i>Previous
+                    </button>
+                    <span id="pageInfo" class="mx-3"></span>
+                    <button id="nextPage" class="btn btn-outline-primary" onclick="changePage(1)">
+                        Next<i class="fas fa-chevron-right ms-2"></i>
+                    </button>
                 </div>
             </div>
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <footer class="bg-light text-center text-lg-start mt-4">
+        <div class="text-center p-3" style="background-color: rgba(0, 0, 0, 0.05);">
+            © 2023 ADAM - Automated Detection of Authentic Material
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
     <script>
         let articles = [];
         let currentPage = 1;
         const resultsPerPage = 50;
 
+        function showLoading() {
+            document.getElementById('loadingSpinner').style.display = 'flex';
+        }
+
+        function hideLoading() {
+            document.getElementById('loadingSpinner').style.display = 'none';
+        }
+
         function loadLanguageData() {
             const language = document.getElementById('languageSelect').value;
             if (!language) return;
+
+            showLoading();
 
             fetch('available_files.json')
                 .then(response => response.json())
@@ -87,29 +175,23 @@
                         Papa.parsePromise(csvFile, { download: true, header: true })
                     );
 
-                    Promise.all(promises)
-                        .then(results => {
-                            articles = results.flatMap(result => result.data);
-                            populateILRDropdown();
-                            displayResults(articles, currentPage);
-                        })
-                        .catch(error => {
-                            console.error("Error loading CSV files:", error);
-                        });
+                    return Promise.all(promises);
+                })
+                .then(results => {
+                    articles = results.flatMap(result => result.data);
+                    populateILRDropdown();
+                    displayResults(articles, currentPage);
                 })
                 .catch(error => {
-                    console.error("Error fetching available files:", error);
-                });
+                    console.error("Error loading data:", error);
+                    alert("An error occurred while loading the data. Please try again.");
+                })
+                .finally(hideLoading);
         }
 
-        // Helper function to wrap Papa.parse in a Promise
         Papa.parsePromise = function(file, config) {
             return new Promise((complete, error) => {
-                Papa.parse(file, {
-                    ...config,
-                    complete,
-                    error
-                });
+                Papa.parse(file, { ...config, complete, error });
             });
         };
 
@@ -137,7 +219,7 @@
                 return (topic === '' || titleMatch || summaryMatch) && ilrMatch;
             });
 
-            displayResults(filteredArticles, 1); // Reset to first page when new search is performed
+            displayResults(filteredArticles, 1);
         }
 
         function displayResults(results, page) {
@@ -148,16 +230,23 @@
             const resultsDiv = document.getElementById('results');
             resultsDiv.innerHTML = '';
 
+            if (paginatedResults.length === 0) {
+                resultsDiv.innerHTML = '<div class="col-12"><div class="alert alert-info">No results found. Try adjusting your search criteria.</div></div>';
+                return;
+            }
+
             paginatedResults.forEach(article => {
                 const articleDiv = document.createElement('div');
                 articleDiv.className = 'col-md-6';
                 articleDiv.innerHTML = `
-                    <div class="card">
+                    <div class="card h-100">
                         <div class="card-body">
                             <span class="badge bg-primary ilr-badge">ILR ${article.ilr_quantized || 'N/A'}</span>
                             <h5 class="card-title">${article.title || 'No Title'}</h5>
                             <h6 class="card-subtitle mb-2 text-muted">${article.language || 'Unknown Language'}</h6>
                             <p class="card-text">${article.summary || 'No summary available'}</p>
+                        </div>
+                        <div class="card-footer bg-transparent border-top-0">
                             ${article.link ? `<a href="${article.link}" class="btn btn-sm btn-outline-primary" target="_blank">Read Full Article</a>` : ''}
                         </div>
                     </div>
